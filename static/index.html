@@ -1,0 +1,66 @@
+<DOCTYPE !html>
+<html>
+    <head>
+        <title>Test</title>
+        <script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"
+        integrity="sha384-xBuQ/xzmlsLoJpyjoggmTEz8OWUFM0/RC5BsqQBDX2v5cMvDHcMakNTNrHIW2I5f"
+        crossorigin="anonymous"></script>
+    </head>
+    <body>
+        <div id="root">
+            <form>
+                <p>用户名</p><input type="text" name="username" id="username" required />
+                <p>密码</p><input type="password" name="password" id="password" required />
+                <button tpye="submit">提交</button>
+            </form>
+            <p style="white-space: pre-line;" id="result"></p>
+        </div>
+        <script>
+            document.forms[0].onsubmit = e => {
+                e.preventDefault();
+                let headers = new Headers();
+                headers.append('Content-Type', 'application/json');
+                fetch('/info', {
+                    method: 'post',
+                    headers,
+                    body: JSON.stringify({
+                        username: $('#username').val(),
+                        password: $('#password').val()
+                    })
+                }).then(res => res.json()).then(data => {
+                    let maxSizeTorrent = sortBySize(data.uploaded);
+                    let maxTimeTorrent = sortByTime(data.uploaded)
+                    $('#result').text(`2017年以来你一共发布了${data.uploaded.length}个种子
+                    其中最大的种子为${maxSizeTorrent.title}，总计${maxSizeTorrent.size}
+                    为其供种时间最长的种子为${maxTimeTorrent.title}，总计${maxTimeTorrent.seedingTime}
+                    `)
+                });
+            }
+
+            function sortBySize(data) {
+                let infos = data.filter(item => item.size.indexOf('GB') !== -1);
+                if(infos.length === 0) infos = data.filter(item => item.size.indexOf('MB') !== -1);
+                let maxSizeTorrent = infos[0];
+                infos.map(item => {
+                    let oldSize = parseFloat(maxSizeTorrent.size);
+                    let newSize = parseFloat(item.size);
+                    if(newSize > oldSize) {
+                        maxSizeTorrent = item;
+                    }
+                })
+                return maxSizeTorrent;
+            }
+
+            function sortByTime(data) {
+                let infos = data.map(item => item.seedingTime.replace('天', '').replace(/:/g, ''));
+                let maxTimeTorrent = 0;
+                infos.map((item, index) => {
+                    let oldTime = parseInt(infos[maxTimeTorrent]);
+                    let newTime = parseInt(item);
+                    if(newTime > oldTime) maxTimeTorrent = index;
+                })
+                return data[maxTimeTorrent];
+            }
+        </script>
+    </body>
+</html>
